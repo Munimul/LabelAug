@@ -1,6 +1,8 @@
 import sys
 import glob
-from PyQt6.QtCore import QSize, Qt
+import os
+import numpy as np
+from PyQt6.QtCore import QSize
 from PyQt6.QtWidgets import  QApplication, QWidget, QPushButton, QVBoxLayout, QCheckBox, QFileDialog, QLabel
 
 class MyApp(QWidget):
@@ -54,9 +56,7 @@ class MyApp(QWidget):
         self.setLayout(layout)
         self.setFixedSize(QSize(400, 300))
         
-
-
-
+# Open directory button action
 
     def openDirectory(self):
         self.saveDirInfo.setText('')
@@ -71,6 +71,9 @@ class MyApp(QWidget):
         else:
             self.openDirInfo.setText('No .txt files found in the directory!')
         return
+    
+
+# Save directory button action
     def saveDirectory(self):
         self.saveDirInfo.setText('')
         dialog = QFileDialog()
@@ -78,15 +81,26 @@ class MyApp(QWidget):
         self.saveDirLabel.setText(foo_dir)
         self.saveDir=foo_dir
         return
+    
+
+# Go button action
     def goFunctions(self):
-#Check if labeldir is valid or contains .txt files
-#Check if augmentation is selected or not
-#Check if savedir is valid
+    #Check if labeldir is valid or contains .txt files
+    #Check if augmentation is selected or not
+    #Check if savedir is valid
         self.checkBoxStatus()
         self.saveDirInfo.setText('')
         if self.goCheck():
             print('ready !')
 # Add functions to execute the augmentations '''''''''''ToDO'''''''''''
+            
+            for augment in self.toDoAugList:
+                # For each augment checklist make directories in the save directory
+                augmentDir=self.makeSaveDirectory(augment)
+                print(augmentDir)
+                #For each augment pass all the files in the augment function
+                for file in self.textfiles:
+                    self.allAugmentFactory(file,augmentDir,augment)
         else:
             print('Not ready')
 
@@ -101,9 +115,9 @@ class MyApp(QWidget):
             self.toDoAugList.append('rotateC270')
         if self.flipOnY.isChecked():
             self.toDoAugList.append('flipOnY')
-    
+
+# Check if open, save , augment conditions for satisfy before go   
     def goCheck(self):
- 
         if self.openDir==None:
             self.saveDirInfo.setText('No label directory is selected!')
             return False
@@ -117,18 +131,75 @@ class MyApp(QWidget):
             self.saveDirInfo.setText('No save directory is selected!')
             return False
         return True
-            
-            
-         
-
-
     
 
+# Make directories in the save directory for different augmentation
+    def makeSaveDirectory(self,aug):
+        augPath=self.saveDir+'/'+aug+'/'
+
+        if not os.path.isdir(augPath):
+            os.makedirs(augPath)
+        return augPath
+    
+# Augment each text file according to the augmentation method
+    def allAugmentFactory(self,labelPath,savePath,aug):
+        with open(labelPath, 'rt') as fd:
+
+            text_content=[]
+
+            for line in fd.readlines():
+        # Check each line in the .txt files for valid YOLO format ---------TO DO--------------------
+                row = []
+                splited = line.strip().split(' ')
+        #Splitted float numbers of each YOLO line 
+                x_center = float(splited[1])
+                y_center = float(splited[2])
+                box_width = float(splited[3])
+                box_height = float(splited[4])
+
+                if (aug==self.listAug[0]): #rotateC90
+                    new_xcenter= float(1-y_center)
+                    new_ycenter= float(x_center)
+                    new_width= box_height
+                    new_height= box_width
+
+                elif (aug==self.listAug[1]):#rotateC180
+                    new_xcenter= float(1-x_center)
+                    new_ycenter= float(1-y_center)
+                    new_width= box_width
+                    new_height= box_height
+            
+                elif (aug==self.listAug[2]):#rotateC270
+                    new_xcenter= float(y_center)
+                    new_ycenter= float(1-x_center)
+                    new_width= box_height
+                    new_height= box_width
+
+                elif (aug==self.listAug[3]):#flipOnY
+                    new_xcenter= float(1-x_center)
+                    new_ycenter= float(y_center)
+                    new_width= box_width
+                    new_height= box_height
+
+                else:
+                    print("Not valid augmentation parameter! Try with 'C90', 'C180', 'C270' or 'FlipY' ")
+                    return
 
 
+                row.append(int(splited[0]))
+                row.append(new_xcenter)
+                row.append(new_ycenter)
+                row.append(new_width)
+                row.append(new_height)
 
-        
+                text_content.append(row)
 
+            np.savetxt(savePath+os.path.basename(labelPath)[:-4]+'_'+aug+'.txt',text_content,delimiter=' ',fmt='%d %f %f %f %f')
+
+#       -------------------------TO DO---------------
+            #Validate Yolo format
+            #Execution Message show
+            #Error Message dialog box
         
 
 
