@@ -3,7 +3,7 @@ import glob
 import os
 import numpy as np
 from PyQt6.QtCore import QSize
-from PyQt6.QtWidgets import  QApplication, QWidget, QPushButton, QVBoxLayout, QCheckBox, QFileDialog, QLabel
+from PyQt6.QtWidgets import  QApplication, QWidget, QPushButton, QVBoxLayout, QCheckBox, QFileDialog, QLabel, QMessageBox
 
 class MyApp(QWidget):
     def __init__(self):
@@ -54,7 +54,7 @@ class MyApp(QWidget):
         layout.addWidget(goButton)
 
         self.setLayout(layout)
-        self.setFixedSize(QSize(400, 300))
+        self.setFixedSize(QSize(600, 400))
         
 # Open directory button action
 
@@ -89,18 +89,17 @@ class MyApp(QWidget):
     #Check if augmentation is selected or not
     #Check if savedir is valid
         self.checkBoxStatus()
-        self.saveDirInfo.setText('')
+        
         if self.goCheck():
-            print('ready !')
-# Add functions to execute the augmentations '''''''''''ToDO'''''''''''
-            
+# Satiesfies all prerequisites for starting the augmentation process          
             for augment in self.toDoAugList:
                 # For each augment checklist make directories in the save directory
                 augmentDir=self.makeSaveDirectory(augment)
-                print(augmentDir)
                 #For each augment pass all the files in the augment function
                 for file in self.textfiles:
                     self.allAugmentFactory(file,augmentDir,augment)
+            # Change it to information message '''''''''''''ToDO''''''''''''''
+            self.warningMessage('Augmentation Completed!')
         else:
             print('Not ready')
 
@@ -119,16 +118,16 @@ class MyApp(QWidget):
 # Check if open, save , augment conditions for satisfy before go   
     def goCheck(self):
         if self.openDir==None:
-            self.saveDirInfo.setText('No label directory is selected!')
+            self.warningMessage('Select a directory which contains the label .txt files!')
             return False
         if (len(self.textfiles)==0):
-            self.saveDirInfo.setText('No .txt file in the directory to augment!')
+            self.warningMessage('No .txt file in the directory to augment!')
             return False
         if (len(self.toDoAugList)==0):
-            self.saveDirInfo.setText('No Augment to be done! Select augment from the checklist!')
+            self.warningMessage('No Augment to be done! Select an augment from the checklist!')
             return False
         if self.saveDir==None:
-            self.saveDirInfo.setText('No save directory is selected!')
+            self.warningMessage('Select a directory to save the augmented files!')
             return False
         return True
     
@@ -148,9 +147,13 @@ class MyApp(QWidget):
             text_content=[]
 
             for line in fd.readlines():
-        # Check each line in the .txt files for valid YOLO format ---------TO DO--------------------
                 row = []
                 splited = line.strip().split(' ')
+                flag=True
+            # YOLO format validation
+                flag= self.validateYolo(splited)
+                if flag==False:
+                    continue
         #Splitted float numbers of each YOLO line 
                 x_center = float(splited[1])
                 y_center = float(splited[2])
@@ -193,14 +196,35 @@ class MyApp(QWidget):
                 row.append(new_height)
 
                 text_content.append(row)
-
-            np.savetxt(savePath+os.path.basename(labelPath)[:-4]+'_'+aug+'.txt',text_content,delimiter=' ',fmt='%d %f %f %f %f')
-
+            if text_content!=[]:
+                
+                np.savetxt(savePath+os.path.basename(labelPath)[:-4]+'_'+aug+'.txt',text_content,delimiter=' ',fmt='%d %f %f %f %f')
+            else:
+                # YOLO format error message
+                print(labelPath+ ' does not contain valid YOLO format!')
 #       -------------------------TO DO---------------
-            #Validate Yolo format
-            #Execution Message show
-            #Error Message dialog box
-        
+            #Validate Yolo format --done--
+            #Execution Message show 
+            #Error Message dialog box ---partially done--
+    
+    #YOLO format validation   ----Not all test case covered for this validation function!!!!---
+    def validateYolo(self,splited):
+        if type(splited)!=list:
+            return False
+        if len(splited)!=5:
+            return False
+        if not splited[0].isdigit():
+            return False
+        for i in range(1,5):
+            if (float(splited[i])>1.0 or float(splited[i])<0.0):
+                return False
+        return True
+    
+    def warningMessage(self,message):
+        button = QMessageBox.warning(self,'Warning',message)
+        if button==QMessageBox.StandardButton.Ok:
+            pass
+
 
 
 app= QApplication(sys.argv)
