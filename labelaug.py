@@ -4,6 +4,7 @@ import os
 import numpy as np
 from PyQt6.QtCore import QSize
 from PyQt6.QtWidgets import  QApplication, QWidget, QPushButton, QVBoxLayout, QCheckBox, QFileDialog, QLabel, QMessageBox, QHBoxLayout
+import cv2
 
 class MyApp(QWidget):
     def __init__(self):
@@ -18,7 +19,10 @@ class MyApp(QWidget):
 
         
 #label open button with 
-        labelOpen=QPushButton("Label Open Directory", clicked=self.openDirectory)
+        labelOpen=QPushButton("Label Open Directory", clicked=self.openLabelDirectory)
+
+# Image open button 
+        imgOpen=QPushButton("Image Open Directory",clicked=self.openImageDirectory)
 # All augment checkboxs (add more augmentations)
         checkLabel=QLabel('Augmentation')       
         self.rotateC90=QCheckBox(text='rotateC90')
@@ -26,23 +30,27 @@ class MyApp(QWidget):
         self.rotateC270=QCheckBox(text='rotateC270')
         self.flipOnY=QCheckBox(text='flipOnY')
 # Two variables to save the directories
-        self.openDir=None
+        self.openLabDir=None
+        self.openImgDir=None
         self.saveDir=None
 # List of all augmentation
         self.listAug=['rotateC90','rotateC180','rotateC270','flipOnY']
 # List of to do augmentation
         self.toDoAugList=[]
 # All textfiles locations
-        self.textfiles=None
+        self.textFiles=None
+# All imgfiles locations
+        self.imgFiles=None
 
-# labelbox to show the open directory path and file info
-        self.openDirLabel=QLabel()
-        self.openDirInfo=QLabel()
+# labelbox to show the open directory path and save dir path
+        self.openLabelPath=QLabel()
+        self.openImagePath=QLabel()
+        self.savePath=QLabel()
 # Label save directory button
         labelSave=QPushButton("Label Save Directory", clicked=self.saveDirectory)
-# Textbox to show the save directory path
-        self.saveDirLabel=QLabel()
-        self.saveDirInfo=QLabel()
+# Textbox to show the image and label info
+        self.imgInfo=QLabel()
+        self.labelInfo=QLabel()
 # Execute button to augment labels for checked items
         goButton=QPushButton("Go!", clicked=self.goFunctions)
 
@@ -50,11 +58,12 @@ class MyApp(QWidget):
 
         
         horizontal1Layout.addWidget(labelOpen)
+        horizontal1Layout.addWidget(imgOpen)
         horizontal1Layout.addWidget(labelSave)
-        horizontalDirInfoLayout.addWidget(self.openDirLabel)
+        horizontalDirInfoLayout.addWidget(self.openLabelPath)
+        horizontalDirInfoLayout.addWidget(self.openImagePath)
+        horizontalDirInfoLayout.addWidget(self.savePath)
         
-        horizontalDirInfoLayout.addWidget(self.saveDirLabel)
-        horizontalDirInfoLayout.addWidget(self.saveDirInfo)
         ver1CheckboxLayout.addWidget(self.rotateC90)
         ver1CheckboxLayout.addWidget(self.rotateC180)
         ver1CheckboxLayout.addWidget(self.rotateC270)
@@ -63,7 +72,10 @@ class MyApp(QWidget):
         
         parentLayout.addLayout(horizontal1Layout)
         parentLayout.addLayout(horizontalDirInfoLayout)
-        parentLayout.addWidget(self.openDirInfo)
+
+        parentLayout.addWidget(self.labelInfo)
+        parentLayout.addWidget(self.imgInfo)
+
         parentLayout.addWidget(checkLabel)
         parentLayout.addLayout(ver1CheckboxLayout)
         
@@ -71,33 +83,62 @@ class MyApp(QWidget):
 
         self.setLayout(parentLayout)
         self.setMinimumSize(QSize(400, 300))
-        
+
+
+
+
+    
+
 # Open directory button action
 
-    def openDirectory(self):
-        self.saveDirInfo.setText('')
-        dialog = QFileDialog()
-        foo_dir = dialog.getExistingDirectory(self,'Select a Folder')
-        self.openDirLabel.setText('OpenLabel Directory: '+foo_dir)
-        self.openDir=foo_dir
-        self.textfiles=glob.glob(self.openDir+'/*.txt')
-        if((len(self.textfiles))>0):
+    def openLabelDirectory(self):
+   
+        self.directoryOpen('label')
+        if((len(self.textFiles))>0):
             #  .txt files exist in the directory
-            self.openDirInfo.setText(str(len(self.textfiles))+' .txt files found in the directory')
+            self.labelInfo.setText(str(len(self.textFiles))+' .txt files found in the directory')
         else:
-            self.openDirInfo.setText('No .txt files found in the directory!')
+            self.labelInfo.setText('No .txt files found in the directory!')
         return
+
+
+# Open image directory button action
+    def openImageDirectory(self):
+        
+        self.directoryOpen('image')
+        if((len(self.imgFiles))>0):
+            #  .jpg files exist in the directory
+            self.imgInfo.setText(str(len(self.imgFiles))+' .jpg files found in the directory')
+        else:
+            self.imgInfo.setText('No .jpg files found in the directory!')
+        
     
 
 # Save directory button action
     def saveDirectory(self):
-        self.saveDirInfo.setText('')
-        dialog = QFileDialog()
-        foo_dir = dialog.getExistingDirectory(self,'Select a Folder')
-        self.saveDirLabel.setText('Save Directory: '+ foo_dir)
-        self.saveDir=foo_dir
+        #self.saveDirInfo.setText('')
+        self.directoryOpen('save')
+        
+# Directory open function
+    def directoryOpen(self,info):
+        # (info='image' image open directory, 'label' label open directory 'save' save directory)
+        dialog=QFileDialog()
+        foo_dir=dialog.getExistingDirectory(self,'Select a Folder')
+        if info=='image':
+            self.openImgDir=foo_dir
+            self.imgFiles=glob.glob(self.openImgDir+'/*.jpg')
+            self.openImagePath.setText('Image Dir: '+foo_dir)
+        elif info=='label':
+            self.openLabDir=foo_dir
+            self.textFiles=glob.glob(self.openLabDir+'/*.txt')
+            self.openLabelPath.setText('Label Dir: '+foo_dir)
+
+        else:
+            self.saveDir=foo_dir
+            self.savePath.setText('Save Directory: '+ foo_dir)
         return
-    
+
+        
 
 # Go button action
     def goFunctions(self):
@@ -112,8 +153,11 @@ class MyApp(QWidget):
                 # For each augment checklist make directories in the save directory
                 augmentDir=self.makeSaveDirectory(augment)
                 #For each augment pass all the files in the augment function
-                for file in self.textfiles:
-                    self.allAugmentFactory(file,augmentDir,augment)
+                for file in self.textFiles:
+                    self.allLabelAugmentFactory(file,augmentDir,augment)
+                # For each augment pass all the img files in the img aug factory
+                for file in self.imgFiles:
+                    self.allImageAugmentFactory(file,augmentDir,augment)
             # Change it to information message '''''''''''''ToDO''''''''''''''
             self.warningMessage('Augmentation Completed!')
         else:
@@ -133,10 +177,10 @@ class MyApp(QWidget):
 
 # Check if open, save , augment conditions for satisfy before go   
     def goCheck(self):
-        if self.openDir==None:
+        if self.openLabDir==None:
             self.warningMessage('Select a directory which contains the label .txt files!')
             return False
-        if (len(self.textfiles)==0):
+        if (len(self.textFiles)==0):
             self.warningMessage('No .txt file in the directory to augment!')
             return False
         if (len(self.toDoAugList)==0):
@@ -157,7 +201,7 @@ class MyApp(QWidget):
         return augPath
     
 # Augment each text file according to the augmentation method
-    def allAugmentFactory(self,labelPath,savePath,aug):
+    def allLabelAugmentFactory(self,labelPath,savePath,aug):
         with open(labelPath, 'rt') as fd:
 
             text_content=[]
@@ -218,6 +262,24 @@ class MyApp(QWidget):
             else:
                 # YOLO format error message
                 print(labelPath+ ' does not contain valid YOLO format!')
+    
+    # All image augment function
+    def allImageAugmentFactory(self,imagePath,savePath, aug):
+        img=cv2.imread(imagePath)
+
+        if (aug==self.listAug[0]): #rotateC90
+            newImg=cv2.rotate(img,cv2.ROTATE_90_CLOCKWISE)
+        elif (aug==self.listAug[1]):#rotateC180
+            newImg=cv2.rotate(img,cv2.ROTATE_180)
+        elif (aug==self.listAug[2]):#rotateC270
+            newImg=cv2.rotate(img,cv2.ROTATE_90_COUNTERCLOCKWISE)
+        elif (aug==self.listAug[3]):#flipOnY
+            newImg=cv2.flip(img, 1)
+        else:
+            print('No valid augmentation')
+        cv2.imwrite(savePath+os.path.basename(imagePath)[:-4]+'_'+aug+'.jpg',newImg)
+
+
 #       -------------------------TO DO---------------
             #Validate Yolo format --done--
             #Execution Message show 
@@ -227,6 +289,7 @@ class MyApp(QWidget):
     def validateYolo(self,splited):
         if type(splited)!=list:
             return False
+        # Each line in yolo contains five numbers, first int, later four float
         if len(splited)!=5:
             return False
         if not splited[0].isdigit():
