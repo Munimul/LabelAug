@@ -3,17 +3,24 @@ import glob
 import os
 import numpy as np
 from PyQt6.QtCore import QSize
-from PyQt6.QtWidgets import  QApplication, QWidget, QPushButton, QVBoxLayout, QCheckBox, QFileDialog, QLabel, QMessageBox
+from PyQt6.QtWidgets import  QApplication, QWidget, QPushButton, QVBoxLayout, QCheckBox, QFileDialog, QLabel, QMessageBox, QHBoxLayout
 
 class MyApp(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle('LabelAug')
-        layout= QVBoxLayout()
+        parentLayout= QVBoxLayout()
+
+        horizontal1Layout=QHBoxLayout()
+        horizontalDirInfoLayout=QHBoxLayout()
+        ver1CheckboxLayout=QHBoxLayout()
+
+
         
 #label open button with 
         labelOpen=QPushButton("Label Open Directory", clicked=self.openDirectory)
-# All augment checkboxs (add more augmentations)       
+# All augment checkboxs (add more augmentations)
+        checkLabel=QLabel('Augmentation')       
         self.rotateC90=QCheckBox(text='rotateC90')
         self.rotateC180=QCheckBox(text='rotateC180')
         self.rotateC270=QCheckBox(text='rotateC270')
@@ -40,21 +47,30 @@ class MyApp(QWidget):
         goButton=QPushButton("Go!", clicked=self.goFunctions)
 
         
-        layout.addWidget(labelOpen)
-        layout.addWidget(self.openDirLabel)
-        layout.addWidget(self.openDirInfo)
-        layout.addWidget(self.rotateC90)
-        layout.addWidget(self.rotateC180)
-        layout.addWidget(self.rotateC270)
-        layout.addWidget(self.flipOnY)
-        
-        layout.addWidget(labelSave)
-        layout.addWidget(self.saveDirLabel)
-        layout.addWidget(self.saveDirInfo)
-        layout.addWidget(goButton)
 
-        self.setLayout(layout)
-        self.setFixedSize(QSize(600, 400))
+        
+        horizontal1Layout.addWidget(labelOpen)
+        horizontal1Layout.addWidget(labelSave)
+        horizontalDirInfoLayout.addWidget(self.openDirLabel)
+        
+        horizontalDirInfoLayout.addWidget(self.saveDirLabel)
+        horizontalDirInfoLayout.addWidget(self.saveDirInfo)
+        ver1CheckboxLayout.addWidget(self.rotateC90)
+        ver1CheckboxLayout.addWidget(self.rotateC180)
+        ver1CheckboxLayout.addWidget(self.rotateC270)
+        ver1CheckboxLayout.addWidget(self.flipOnY)
+        
+        
+        parentLayout.addLayout(horizontal1Layout)
+        parentLayout.addLayout(horizontalDirInfoLayout)
+        parentLayout.addWidget(self.openDirInfo)
+        parentLayout.addWidget(checkLabel)
+        parentLayout.addLayout(ver1CheckboxLayout)
+        
+        parentLayout.addWidget(goButton)
+
+        self.setLayout(parentLayout)
+        self.setMinimumSize(QSize(400, 300))
         
 # Open directory button action
 
@@ -62,7 +78,7 @@ class MyApp(QWidget):
         self.saveDirInfo.setText('')
         dialog = QFileDialog()
         foo_dir = dialog.getExistingDirectory(self,'Select a Folder')
-        self.openDirLabel.setText(foo_dir)
+        self.openDirLabel.setText('OpenLabel Directory: '+foo_dir)
         self.openDir=foo_dir
         self.textfiles=glob.glob(self.openDir+'/*.txt')
         if((len(self.textfiles))>0):
@@ -78,7 +94,7 @@ class MyApp(QWidget):
         self.saveDirInfo.setText('')
         dialog = QFileDialog()
         foo_dir = dialog.getExistingDirectory(self,'Select a Folder')
-        self.saveDirLabel.setText(foo_dir)
+        self.saveDirLabel.setText('Save Directory: '+ foo_dir)
         self.saveDir=foo_dir
         return
     
