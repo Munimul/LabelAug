@@ -1,10 +1,14 @@
 import sys
+sys.dont_write_bytecode=True
 import glob
 import os
 import numpy as np
 from PyQt6.QtCore import QSize
 from PyQt6.QtWidgets import  QApplication, QWidget, QPushButton, QVBoxLayout, QCheckBox, QFileDialog, QLabel, QMessageBox, QHBoxLayout
 import cv2
+
+from libs.validateYolo import yoloCheck
+from libs.lineParser import lineParse
 
 class MyApp(QWidget):
     def __init__(self):
@@ -183,6 +187,12 @@ class MyApp(QWidget):
         if (len(self.textFiles)==0):
             self.warningMessage('No .txt file in the directory to augment!')
             return False
+        if self.openImgDir==None:
+            self.warningMessage('Select a directory which contains the image files!')
+            return False
+        if(len(self.imgFiles)==0):
+            self.warningMessage('No image file in the directory to augment!')
+            return False
         if (len(self.toDoAugList)==0):
             self.warningMessage('No Augment to be done! Select an augment from the checklist!')
             return False
@@ -211,45 +221,13 @@ class MyApp(QWidget):
                 splited = line.strip().split(' ')
                 flag=True
             # YOLO format validation
-                flag= self.validateYolo(splited)
+                flag= yoloCheck(splited)
                 if flag==False:
                     continue
-        #Splitted float numbers of each YOLO line 
-                x_center = float(splited[1])
-                y_center = float(splited[2])
-                box_width = float(splited[3])
-                box_height = float(splited[4])
+            #Splitted float numbers of each YOLO line 
+                cla,new_xcenter,new_ycenter,new_width,new_height=lineParse(splited,aug)
 
-                if (aug==self.listAug[0]): #rotateC90
-                    new_xcenter= float(1-y_center)
-                    new_ycenter= float(x_center)
-                    new_width= box_height
-                    new_height= box_width
-
-                elif (aug==self.listAug[1]):#rotateC180
-                    new_xcenter= float(1-x_center)
-                    new_ycenter= float(1-y_center)
-                    new_width= box_width
-                    new_height= box_height
-            
-                elif (aug==self.listAug[2]):#rotateC270
-                    new_xcenter= float(y_center)
-                    new_ycenter= float(1-x_center)
-                    new_width= box_height
-                    new_height= box_width
-
-                elif (aug==self.listAug[3]):#flipOnY
-                    new_xcenter= float(1-x_center)
-                    new_ycenter= float(y_center)
-                    new_width= box_width
-                    new_height= box_height
-
-                else:
-                    print("Not valid augmentation parameter! Try with 'C90', 'C180', 'C270' or 'FlipY' ")
-                    return
-
-
-                row.append(int(splited[0]))
+                row.append(cla)
                 row.append(new_xcenter)
                 row.append(new_ycenter)
                 row.append(new_width)
@@ -279,25 +257,6 @@ class MyApp(QWidget):
             print('No valid augmentation')
         cv2.imwrite(savePath+os.path.basename(imagePath)[:-4]+'_'+aug+'.jpg',newImg)
 
-
-#       -------------------------TO DO---------------
-            #Validate Yolo format --done--
-            #Execution Message show 
-            #Error Message dialog box ---partially done--
-    
-    #YOLO format validation   ----Not all test case covered for this validation function!!!!---
-    def validateYolo(self,splited):
-        if type(splited)!=list:
-            return False
-        # Each line in yolo contains five numbers, first int, later four float
-        if len(splited)!=5:
-            return False
-        if not splited[0].isdigit():
-            return False
-        for i in range(1,5):
-            if (float(splited[i])>1.0 or float(splited[i])<0.0):
-                return False
-        return True
     
     def warningMessage(self,message):
         button = QMessageBox.warning(self,'Warning',message)
