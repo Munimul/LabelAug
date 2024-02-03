@@ -87,11 +87,7 @@ class MyApp(QWidget):
 
         self.setLayout(parentLayout)
         self.setMinimumSize(QSize(400, 300))
-
-
-
-
-    
+  
 
 # Open directory button action
 
@@ -122,7 +118,8 @@ class MyApp(QWidget):
     def saveDirectory(self):
         #self.saveDirInfo.setText('')
         self.directoryOpen('save')
-        
+
+
 # Directory open function
     def directoryOpen(self,info):
         # (info='image' image open directory, 'label' label open directory 'save' save directory)
@@ -143,7 +140,6 @@ class MyApp(QWidget):
         return
 
         
-
 # Go button action
     def goFunctions(self):
     #Check if labeldir is valid or contains .txt files
