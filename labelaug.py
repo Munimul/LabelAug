@@ -108,7 +108,7 @@ class MyApp(QWidget):
         self.directoryOpen('image')
         if((len(self.imgFiles))>0):
             #  .jpg files exist in the directory
-            self.imgInfo.setText(str(len(self.imgFiles))+' .jpg files found in the directory')
+            self.imgInfo.setText(str(len(self.imgFiles))+' image files found in the directory')
         else:
             self.imgInfo.setText('No .jpg files found in the directory!')
         
@@ -127,7 +127,7 @@ class MyApp(QWidget):
         foo_dir=dialog.getExistingDirectory(self,'Select a Folder')
         if info=='image':
             self.openImgDir=foo_dir
-            self.imgFiles=glob.glob(self.openImgDir+'/*.jpg')
+            self.imgFiles=glob.glob(self.openImgDir+'/*.jp*g')
             self.openImagePath.setText('Image Dir: '+foo_dir)
         elif info=='label':
             self.openLabDir=foo_dir
@@ -251,7 +251,10 @@ class MyApp(QWidget):
             newImg=cv2.flip(img, 1)
         else:
             print('No valid augmentation')
-        cv2.imwrite(savePath+os.path.basename(imagePath)[:-4]+'_'+aug+'.jpg',newImg)
+        if (os.path.basename(imagePath)[-2:]=='eg'):
+            cv2.imwrite(savePath+os.path.basename(imagePath)[:-5]+'_'+aug+'.jpeg',newImg)
+        else:
+            cv2.imwrite(savePath+os.path.basename(imagePath)[:-4]+'_'+aug+'.jpg',newImg)
 
     
     def warningMessage(self,message):

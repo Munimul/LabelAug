@@ -9,7 +9,7 @@ Clone the repository
 
 ```bash
 
- git clone https://github.com/Munimul/LabelAug.git
+git clone https://github.com/Munimul/LabelAug.git
 
 ```
 
@@ -17,7 +17,7 @@ Change directory (cd) to the repository where it is cloned
 
 ```bash
 
-  cd LabelAug
+cd LabelAug
 
 ```
 
@@ -27,7 +27,7 @@ Install Dependencies
 
 ```bash
 
-    pip install -r requirements.txt
+pip install -r requirements.txt
 
 ```
 
@@ -35,6 +35,25 @@ Run the labelaug.py file
 
 ```bash
 
-    python labelaug.py
+python labelaug.py
 
 ```
+
+# Usage
+
+Follow the steps above and run the labelaug.py file
+
+    1. Select the directory using 'Label Open Directory' button where your label or yolo.txt files are located
+    2. If the images are located in different folder, select that folder using 'Image Open Directory' button or select the same directory
+    3. Select a folder where you want to save the augmented images and labels
+    4. Select atleast one or multiple augmentation method
+    5. Push 'Go' button
+    6. For every augmentation, a subfolder will be created in your selected save directory. Images and label files will be located there.
+
+### Picture sample
+
+<img src="data/pic1.png" width="416">
+
+<img src="data/pic2.png" width="416">
+
+### Output image example
