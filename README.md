@@ -43,12 +43,12 @@ python labelaug.py
 
 Follow the steps above and run the labelaug.py file
 
-    1. Select the directory using 'Label Open Directory' button where your label or yolo.txt files are located
-    2. If the images are located in different folder, select that folder using 'Image Open Directory' button or select the same directory
-    3. Select a folder where you want to save the augmented images and labels
-    4. Select atleast one or multiple augmentation method
-    5. Push 'Go' button
-    6. For every augmentation, a subfolder will be created in your selected save directory. Images and label files will be located there.
+1. Select the directory using 'Label Open Directory' button where your label or yolo.txt files are located
+2. If the images are located in different folder, select that folder using 'Image Open Directory' button or select the same directory
+3. Select a folder where you want to save the augmented images and labels
+4. Select atleast one or multiple augmentation method
+5. Push 'Go' button
+6. For every augmentation, a subfolder will be created in your selected save directory. Images and label files will be located there.
 
 ### Picture sample
 

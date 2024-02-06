@@ -3,8 +3,9 @@ sys.dont_write_bytecode=True
 import glob
 import os
 import numpy as np
-from PyQt6.QtCore import QSize
+from PyQt6.QtCore import QSize,Qt
 from PyQt6.QtWidgets import  QApplication, QWidget, QPushButton, QVBoxLayout, QCheckBox, QFileDialog, QLabel, QMessageBox, QHBoxLayout
+from PyQt6.QtGui import QPixmap
 import cv2
 
 from libs.validateYolo import yoloCheck
@@ -27,8 +28,15 @@ class MyApp(QWidget):
 
 # Image open button 
         imgOpen=QPushButton("Image Open Directory",clicked=self.openImageDirectory)
+
+# Image with label show
+        self.img_show=QLabel(self)
+        previousButton=QPushButton('Previous',clicked=self.previousImage)
+        nextButton=QPushButton('Next',clicked=self.nextImage)
+        # Go to Open image directory
 # All augment checkboxs (add more augmentations)
-        checkLabel=QLabel('Augmentation')       
+        checkLabel=QLabel('Augmentation')
+        checkLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.rotateC90=QCheckBox(text='rotateC90')
         self.rotateC180=QCheckBox(text='rotateC180')
         self.rotateC270=QCheckBox(text='rotateC270')
@@ -37,6 +45,8 @@ class MyApp(QWidget):
         self.openLabDir=None
         self.openImgDir=None
         self.saveDir=None
+# Initial image_index
+        self.image_index=None
 # List of all augmentation
         self.listAug=['rotateC90','rotateC180','rotateC270','flipOnY']
 # List of to do augmentation
@@ -79,14 +89,17 @@ class MyApp(QWidget):
 
         parentLayout.addWidget(self.labelInfo)
         parentLayout.addWidget(self.imgInfo)
-
+        parentLayout.addWidget(previousButton)
+        parentLayout.addWidget(nextButton)
+        parentLayout.addWidget(self.img_show)
         parentLayout.addWidget(checkLabel)
+        
         parentLayout.addLayout(ver1CheckboxLayout)
         
         parentLayout.addWidget(goButton)
 
         self.setLayout(parentLayout)
-        self.setMinimumSize(QSize(400, 300))
+        self.setMinimumSize(QSize(700, 600))
   
 
 # Open directory button action
@@ -94,7 +107,9 @@ class MyApp(QWidget):
     def openLabelDirectory(self):
    
         self.directoryOpen('label')
-        if((len(self.textFiles))>0):
+        if self.textFiles==None:
+            pass
+        elif((len(self.textFiles))>0):
             #  .txt files exist in the directory
             self.labelInfo.setText(str(len(self.textFiles))+' .txt files found in the directory')
         else:
@@ -106,12 +121,48 @@ class MyApp(QWidget):
     def openImageDirectory(self):
         
         self.directoryOpen('image')
-        if((len(self.imgFiles))>0):
+        # No directory selected
+        if (self.imgFiles==None):
+            pass
+        elif((len(self.imgFiles))>0):
             #  .jpg files exist in the directory
             self.imgInfo.setText(str(len(self.imgFiles))+' image files found in the directory')
+
+            # show first image of the directory
+            self.image_index=0
+            self.imageShow(self.image_index)
+            
         else:
             self.imgInfo.setText('No .jpg files found in the directory!')
-        
+
+
+# Image show function 
+    def imageShow(self,index):
+        self.img_show.setPixmap(QPixmap(self.imgFiles[index]).scaledToWidth(416))
+        self.img_show.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.img_show.show()
+
+# Previous Image show
+    def previousImage(self):
+        if self.image_index==None:
+            pass
+        elif self.image_index==0:
+            pass
+        else:
+            self.image_index -= 1
+            self.imageShow(self.image_index)
+    
+# Next Image show
+    def nextImage(self):
+
+        if self.image_index==None:
+            pass
+        elif self.image_index>=len(self.imgFiles)-1:
+            pass
+        else:
+            self.image_index +=1
+            self.imageShow(self.image_index)
+
     
 
 # Save directory button action
@@ -125,7 +176,9 @@ class MyApp(QWidget):
         # (info='image' image open directory, 'label' label open directory 'save' save directory)
         dialog=QFileDialog()
         foo_dir=dialog.getExistingDirectory(self,'Select a Folder')
-        if info=='image':
+        if foo_dir=='':
+            pass
+        elif info=='image':
             self.openImgDir=foo_dir
             self.imgFiles=glob.glob(self.openImgDir+'/*.jp*g')
             self.openImagePath.setText('Image Dir: '+foo_dir)
@@ -137,6 +190,7 @@ class MyApp(QWidget):
         else:
             self.saveDir=foo_dir
             self.savePath.setText('Save Directory: '+ foo_dir)
+
         return
 
         
