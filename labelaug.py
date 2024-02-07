@@ -69,7 +69,7 @@ class MyApp(QWidget):
         goButton=QPushButton("Go!", clicked=self.goFunctions)
 
         
-
+# Layout widget add in sequence
         
         horizontal1Layout.addWidget(labelOpen)
         horizontal1Layout.addWidget(imgOpen)
@@ -101,9 +101,7 @@ class MyApp(QWidget):
         self.setLayout(parentLayout)
         self.setMinimumSize(QSize(700, 600))
   
-
 # Open directory button action
-
     def openLabelDirectory(self):
    
         self.directoryOpen('label')
@@ -112,10 +110,15 @@ class MyApp(QWidget):
         elif((len(self.textFiles))>0):
             #  .txt files exist in the directory
             self.labelInfo.setText(str(len(self.textFiles))+' .txt files found in the directory')
+            # Trigger imgShow when reloading labels directory 
+            # Check if img directory is valid and contains images
+            if (self.imgFiles==None) or len(self.imgFiles)==0:
+                pass
+            else:
+                self.imageShow(self.image_index)
         else:
             self.labelInfo.setText('No .txt files found in the directory!')
         return
-
 
 # Open image directory button action
     def openImageDirectory(self):
@@ -135,13 +138,13 @@ class MyApp(QWidget):
         else:
             self.imgInfo.setText('No .jpg files found in the directory!')
 
-
 # Image show function 
     def imageShow(self,index):
         self.img_show.setPixmap(QPixmap(self.imgFiles[index]).scaledToWidth(416))
         self.img_show.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.img_show.show()
-
+        print(self.labelExists(self.getOnlyBasename(self.imgFiles[index])))
+        
 # Previous Image show
     def previousImage(self):
         if self.image_index==None:
@@ -163,13 +166,29 @@ class MyApp(QWidget):
             self.image_index +=1
             self.imageShow(self.image_index)
 
+# Path base name 
+    def getOnlyBasename(self,path):
+        return os.path.splitext(os.path.basename(path))[0]
+
+# Get extension
+    def getOnlyExtension(self,path):
+        return os.path.splitext(os.path.basename(path))[1]
     
+# Label exists
+    def labelExists(self,basename):
+        if self.textFiles==None or len(self.textFiles)==0:
+            return False
+
+        else:
+            for textfile in self.textFiles:
+                if textfile.endswith(basename+'.txt'):
+                    return True
+            return False
 
 # Save directory button action
     def saveDirectory(self):
         #self.saveDirInfo.setText('')
         self.directoryOpen('save')
-
 
 # Directory open function
     def directoryOpen(self,info):
@@ -192,7 +211,6 @@ class MyApp(QWidget):
             self.savePath.setText('Save Directory: '+ foo_dir)
 
         return
-
         
 # Go button action
     def goFunctions(self):
@@ -217,7 +235,7 @@ class MyApp(QWidget):
         else:
             print('Not ready')
 
-
+# Check which augmentations are checked and append to toDOAugList
     def checkBoxStatus(self):
         self.toDoAugList=[]
         if self.rotateC90.isChecked():
@@ -291,7 +309,7 @@ class MyApp(QWidget):
                 # YOLO format error message
                 print(labelPath+ ' does not contain valid YOLO format!')
     
-    # All image augment function
+# All image augment function
     def allImageAugmentFactory(self,imagePath,savePath, aug):
         img=cv2.imread(imagePath)
 
@@ -305,12 +323,14 @@ class MyApp(QWidget):
             newImg=cv2.flip(img, 1)
         else:
             print('No valid augmentation')
-        if (os.path.basename(imagePath)[-2:]=='eg'):
-            cv2.imwrite(savePath+os.path.basename(imagePath)[:-5]+'_'+aug+'.jpeg',newImg)
-        else:
-            cv2.imwrite(savePath+os.path.basename(imagePath)[:-4]+'_'+aug+'.jpg',newImg)
+            pass
+        
+        img_ext=self.getOnlyExtension(imagePath)
+        img_name=self.getOnlyBasename(imagePath)
+        cv2.imwrite(savePath+img_name+'_'+aug+img_ext,newImg)
+        
 
-    
+# Warning message box generator   
     def warningMessage(self,message):
         button = QMessageBox.warning(self,'Warning',message)
         if button==QMessageBox.StandardButton.Ok:
