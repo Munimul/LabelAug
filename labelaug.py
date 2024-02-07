@@ -5,7 +5,7 @@ import os
 import numpy as np
 from PyQt6.QtCore import QSize,Qt
 from PyQt6.QtWidgets import  QApplication, QWidget, QPushButton, QVBoxLayout, QCheckBox, QFileDialog, QLabel, QMessageBox, QHBoxLayout
-from PyQt6.QtGui import QPixmap
+from PyQt6.QtGui import QPixmap, QPen,QPainter,QColor
 import cv2
 
 from libs.validateYolo import yoloCheck
@@ -140,10 +140,56 @@ class MyApp(QWidget):
 
 # Image show function 
     def imageShow(self,index):
-        self.img_show.setPixmap(QPixmap(self.imgFiles[index]).scaledToWidth(416))
-        self.img_show.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.img_show.show()
-        print(self.labelExists(self.getOnlyBasename(self.imgFiles[index])))
+        pixmap=QPixmap(self.imgFiles[index]).scaledToWidth(416)
+        
+        
+        
+        # if label file exists: --> parse each label from the .txt file with image width and height
+
+        if (self.labelExists(self.getOnlyBasename(self.imgFiles[index]))):
+            imgWidth=pixmap.width()
+            imgHeight=pixmap.height()
+            labelTxtPath=self.openLabDir+'/'+self.getOnlyBasename(self.imgFiles[index])+'.txt'
+            bboxCordinates=self.bBoxParser(labelTxtPath,imgWidth,imgHeight)
+            painterIns=QPainter(pixmap)
+            pen=QPen(QColor(0, 255, 255))
+            pen.setWidth(3)
+            painterIns.setPen(pen)
+            for x,y,w,h in bboxCordinates:
+                painterIns.drawRect(x,y,w,h)
+            painterIns.end()
+            self.img_show.setPixmap(pixmap)
+            self.img_show.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            self.img_show.show()
+        # Else only show the image without bounding box
+        else:
+            self.img_show.setPixmap(pixmap)
+            self.img_show.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            self.img_show.show()
+# bBox parser 
+    def bBoxParser(self, labelPath,imgWidth,imgHeight):
+        with open(labelPath, 'rt') as fd:
+
+            bboxCordinate=[]
+
+            for line in fd.readlines():
+                splited = line.strip().split(' ')
+                flag=True
+            # YOLO format validation
+                flag= yoloCheck(splited)
+                if flag:
+                    id,x_center,y_center,width,height=map(float,splited)
+                    
+                    x=int(((x_center-(width/2))*imgWidth))
+                    y=int((y_center - (height / 2)) * imgHeight)
+                    w = int(width * imgWidth)
+                    h = int(height * imgHeight)
+
+                    bboxCordinate.append((x,y,w,h))
+            return bboxCordinate
+                    
+        
+
         
 # Previous Image show
     def previousImage(self):
