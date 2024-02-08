@@ -19,7 +19,9 @@ class MyApp(QWidget):
 
         horizontal1Layout=QHBoxLayout()
         horizontalDirInfoLayout=QHBoxLayout()
-        ver1CheckboxLayout=QHBoxLayout()
+        horizontalImLabDetail=QHBoxLayout()
+        horizontalButton=QHBoxLayout()
+        CheckboxLayout=QHBoxLayout()
 
 
         
@@ -33,6 +35,8 @@ class MyApp(QWidget):
         self.img_show=QLabel(self)
         previousButton=QPushButton('Previous',clicked=self.previousImage)
         nextButton=QPushButton('Next',clicked=self.nextImage)
+
+        saveImage=QPushButton('Save Image',clicked=self.saveAsImage)
         # Go to Open image directory
 # All augment checkboxs (add more augmentations)
         checkLabel=QLabel('Augmentation')
@@ -78,23 +82,29 @@ class MyApp(QWidget):
         horizontalDirInfoLayout.addWidget(self.openImagePath)
         horizontalDirInfoLayout.addWidget(self.savePath)
         
-        ver1CheckboxLayout.addWidget(self.rotateC90)
-        ver1CheckboxLayout.addWidget(self.rotateC180)
-        ver1CheckboxLayout.addWidget(self.rotateC270)
-        ver1CheckboxLayout.addWidget(self.flipOnY)
+        CheckboxLayout.addWidget(self.rotateC90)
+        CheckboxLayout.addWidget(self.rotateC180)
+        CheckboxLayout.addWidget(self.rotateC270)
+        CheckboxLayout.addWidget(self.flipOnY)
         
         
         parentLayout.addLayout(horizontal1Layout)
         parentLayout.addLayout(horizontalDirInfoLayout)
 
-        parentLayout.addWidget(self.labelInfo)
-        parentLayout.addWidget(self.imgInfo)
-        parentLayout.addWidget(previousButton)
-        parentLayout.addWidget(nextButton)
+        horizontalImLabDetail.addWidget(self.labelInfo)
+        horizontalImLabDetail.addWidget(self.imgInfo)
+
+        parentLayout.addLayout(horizontalImLabDetail)
+
+        horizontalButton.addWidget(previousButton)
+        horizontalButton.addWidget(nextButton)
+        
+        parentLayout.addLayout(horizontalButton)
         parentLayout.addWidget(self.img_show)
+        parentLayout.addWidget(saveImage)
         parentLayout.addWidget(checkLabel)
         
-        parentLayout.addLayout(ver1CheckboxLayout)
+        parentLayout.addLayout(CheckboxLayout)
         
         parentLayout.addWidget(goButton)
 
@@ -257,6 +267,18 @@ class MyApp(QWidget):
             self.savePath.setText('Save Directory: '+ foo_dir)
 
         return
+    
+# Save the displayed image
+    def saveAsImage(self):
+        pixmap=self.img_show.pixmap()
+        if self.openImgDir==None:
+            return
+        filename, _ = QFileDialog.getSaveFileName(self, "Save Image", "image", "JPEG files (*.jpg)")
+        print(filename)
+        if filename:
+            saved=pixmap.save(filename)
+            if saved:
+                self.warningMessage('Image file saved successfully')
         
 # Go button action
     def goFunctions(self):
