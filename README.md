@@ -59,15 +59,21 @@ The class should be an integer value and rest of the four in normalized(0-1) flo
 
 ### Picture sample
 
-Sample user interface displaying all directory information and contained images and labels information
+#### Sample user interface displaying all directory information and contained images and labels information
+
 <img src="data/ui.jpg" width="416">
-After augmentation in the selected directory multiple folders will be created for each augmentation type containing all the images and labels.
+
+#### Separate folders for each agumentation
+
 <img src="data/ui2.jpg" width="416">
 
 ### Output image example
 
-Input image with labels
+#### Input image with labels
+
 <img src="data/image1.jpg" width="416">
-Output augmentation results.
-<img src="data/image2.jpg" width="416"> <img src="data/image4.jpg" width="416">
-<img src="data/image3.jpg" width="416"><img src="data/image5.jpg" width="416">
+
+#### Output augmentation results.
+
+<img src="data/image2.jpg" width="300"> <img src="data/image4.jpg" width="300">
+<img src="data/image3.jpg" width="300"><img src="data/image5.jpg" width="300">
