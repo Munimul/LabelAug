@@ -4,7 +4,7 @@ import glob
 import os
 import numpy as np
 from PyQt6.QtCore import QSize,Qt
-from PyQt6.QtWidgets import  QApplication, QWidget, QPushButton, QVBoxLayout, QCheckBox, QFileDialog, QLabel, QMessageBox, QHBoxLayout
+from PyQt6.QtWidgets import  QApplication, QWidget, QPushButton, QVBoxLayout, QCheckBox, QFileDialog, QLabel, QMessageBox, QHBoxLayout, QProgressBar
 from PyQt6.QtGui import QPixmap, QPen,QPainter,QColor
 import cv2
 
@@ -70,7 +70,7 @@ class MyApp(QWidget):
         self.imgInfo=QLabel()
         self.labelInfo=QLabel()
 # Execute button to augment labels for checked items
-        goButton=QPushButton("Go!", clicked=self.goFunctions)
+        self.goButton=QPushButton("Go!", clicked=self.goFunctions)
 
         
 # Layout widget add in sequence
@@ -106,7 +106,7 @@ class MyApp(QWidget):
         
         parentLayout.addLayout(CheckboxLayout)
         
-        parentLayout.addWidget(goButton)
+        parentLayout.addWidget(self.goButton)
 
         self.setLayout(parentLayout)
         self.setMinimumSize(QSize(700, 600))
@@ -288,18 +288,22 @@ class MyApp(QWidget):
         self.checkBoxStatus()
         
         if self.goCheck():
+            self.goButton.setEnabled(False)
+            #Progress start with i=1
+            
 # Satiesfies all prerequisites for starting the augmentation process          
             for augment in self.toDoAugList:
                 # For each augment checklist make directories in the save directory
-                augmentDir=self.makeSaveDirectory(augment)
+                augmentDir=self.makeSaveDirectory(augment)            
                 #For each augment pass all the files in the augment function
                 for file in self.textFiles:
-                    self.allLabelAugmentFactory(file,augmentDir,augment)
+                    self.allLabelAugmentFactory(file,augmentDir,augment)                   
                 # For each augment pass all the img files in the img aug factory
                 for file in self.imgFiles:
                     self.allImageAugmentFactory(file,augmentDir,augment)
-            # Change it to information message '''''''''''''ToDO''''''''''''''
+            
             self.warningMessage('Augmentation Completed!')
+            self.goButton.setEnabled(True)
         else:
             print('Not ready')
 

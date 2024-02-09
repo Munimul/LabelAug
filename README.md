@@ -76,4 +76,4 @@ The class should be an integer value and rest of the four in normalized(0-1) flo
 #### Output augmentation results.
 
 <img src="data/image2.jpg" width="300"> <img src="data/image4.jpg" width="300">
-<img src="data/image3.jpg" width="300"><img src="data/image5.jpg" width="300">
+<img src="data/image3.jpg" width="300"> <img src="data/image5.jpg" width="300">
