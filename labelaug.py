@@ -3,13 +3,114 @@ sys.dont_write_bytecode=True
 import glob
 import os
 import numpy as np
-from PyQt6.QtCore import QSize,Qt
+from PyQt6.QtCore import QSize,Qt,QObject, QThread, pyqtSignal
 from PyQt6.QtWidgets import  QApplication, QWidget, QPushButton, QVBoxLayout, QCheckBox, QFileDialog, QLabel, QMessageBox, QHBoxLayout, QProgressBar
 from PyQt6.QtGui import QPixmap, QPen,QPainter,QColor
 import cv2
 
 from libs.validateYolo import yoloCheck
 from libs.lineParser import lineParse
+
+
+# Worker Class --does all the work of augmentation and file creation in separate thread without freezing the  main GUI----
+class Worker(QObject):
+    finished=pyqtSignal()
+    progress=pyqtSignal(int)
+
+    def __init__(self,imageDir,labelDir,saveDir,toDoAugList,textFiles,imgFiles):
+        super().__init__()
+        self.imageDir=imageDir
+        self.labelDir=labelDir
+        self.saveDir=saveDir
+        self.toDoAugList=toDoAugList
+        self.textFiles=textFiles
+        self.imgFiles=imgFiles
+        self.listAug=['rotateC90','rotateC180','rotateC270','flipOnY']
+
+
+
+    def run(self):
+        i=0
+        for augment in self.toDoAugList:
+        # For each augment checklist make directories in the save directory
+            augmentDir=self.makeSaveDirectory(augment)            
+        #For each augment pass all the files in the augment function
+            for file in self.textFiles:
+                self.allLabelAugmentFactory(file,augmentDir,augment)
+                i+=1
+                self.progress.emit(i)                   
+        # For each augment pass all the img files in the img aug factory
+            for file in self.imgFiles:
+                self.allImageAugmentFactory(file,augmentDir,augment)
+                i+=1
+                self.progress.emit(i)
+        self.finished.emit()
+            
+# Funtion for creating folder named after each augmentation
+    def makeSaveDirectory(self,aug):
+        augPath=self.saveDir+'/'+aug+'/'
+
+        if not os.path.isdir(augPath):
+            os.makedirs(augPath)
+        return augPath
+    
+
+# Augment each text file according to the augmentation method
+    def allLabelAugmentFactory(self,labelPath,savePath,aug):
+        with open(labelPath, 'rt') as fd:
+
+            text_content=[]
+
+            for line in fd.readlines():
+                row = []
+                splited = line.strip().split(' ')
+                flag=True
+            # YOLO format validation
+                flag= yoloCheck(splited)
+                if flag==False:
+                    continue
+            #Splitted float numbers of each YOLO line 
+                cla,new_xcenter,new_ycenter,new_width,new_height=lineParse(splited,aug)
+
+                row.append(cla)
+                row.append(new_xcenter)
+                row.append(new_ycenter)
+                row.append(new_width)
+                row.append(new_height)
+
+                text_content.append(row)
+            if text_content!=[]:
+                
+                np.savetxt(savePath+os.path.basename(labelPath)[:-4]+'_'+aug+'.txt',text_content,delimiter=' ',fmt='%d %f %f %f %f')
+            
+# All image augment function
+    def allImageAugmentFactory(self,imagePath,savePath, aug):
+        img=cv2.imread(imagePath)
+
+        if (aug==self.listAug[0]): #rotateC90
+            newImg=cv2.rotate(img,cv2.ROTATE_90_CLOCKWISE)
+        elif (aug==self.listAug[1]):#rotateC180
+            newImg=cv2.rotate(img,cv2.ROTATE_180)
+        elif (aug==self.listAug[2]):#rotateC270
+            newImg=cv2.rotate(img,cv2.ROTATE_90_COUNTERCLOCKWISE)
+        elif (aug==self.listAug[3]):#flipOnY
+            newImg=cv2.flip(img, 1)
+        else:
+            pass
+        
+        img_ext=self.getOnlyExtension(imagePath)
+        img_name=self.getOnlyBasename(imagePath)
+        cv2.imwrite(savePath+img_name+'_'+aug+img_ext,newImg)
+
+# Path base name 
+    def getOnlyBasename(self,path):
+        return os.path.splitext(os.path.basename(path))[0]
+
+# Get extension
+    def getOnlyExtension(self,path):
+        return os.path.splitext(os.path.basename(path))[1]
+
+  
 
 class MyApp(QWidget):
     def __init__(self):
@@ -288,22 +389,37 @@ class MyApp(QWidget):
         self.checkBoxStatus()
         
         if self.goCheck():
+           
+            self.thread = QThread()
+       
+            self.worker = Worker(self.openImgDir,self.openLabDir,self.saveDir,self.toDoAugList,self.textFiles,self.imgFiles)
+       
+            self.worker.moveToThread(self.thread)
+        # Connecting signals and slots
+            self.thread.started.connect(self.worker.run)
+            self.worker.finished.connect(self.thread.quit)
+            self.worker.finished.connect(self.worker.deleteLater)
+            self.thread.finished.connect(self.thread.deleteLater)
+            self.worker.progress.connect(self.reportProgress)
+        #Starting the thread
+            self.thread.start()
+
+        # Final resets
+            # Disable Go button
             self.goButton.setEnabled(False)
-            #Progress start with i=1
-            
-# Satiesfies all prerequisites for starting the augmentation process          
-            for augment in self.toDoAugList:
-                # For each augment checklist make directories in the save directory
-                augmentDir=self.makeSaveDirectory(augment)            
-                #For each augment pass all the files in the augment function
-                for file in self.textFiles:
-                    self.allLabelAugmentFactory(file,augmentDir,augment)                   
-                # For each augment pass all the img files in the img aug factory
-                for file in self.imgFiles:
-                    self.allImageAugmentFactory(file,augmentDir,augment)
-            
-            self.warningMessage('Augmentation Completed!')
-            self.goButton.setEnabled(True)
+            self.thread.finished.connect(
+                lambda: self.goButton.setEnabled(True)
+            )
+            self.thread.finished.connect(
+            # setting go button text to Go!
+                lambda: self.goButton.setText("Go!"),
+            )
+            self.thread.finished.connect(
+                # Notify for completetion
+                lambda:self.warningMessage('Augmentation Completed!')
+            )
+           
+
         else:
             print('Not ready')
 
@@ -342,77 +458,24 @@ class MyApp(QWidget):
         return True
     
 
-# Make directories in the save directory for different augmentation
-    def makeSaveDirectory(self,aug):
-        augPath=self.saveDir+'/'+aug+'/'
-
-        if not os.path.isdir(augPath):
-            os.makedirs(augPath)
-        return augPath
-    
-# Augment each text file according to the augmentation method
-    def allLabelAugmentFactory(self,labelPath,savePath,aug):
-        with open(labelPath, 'rt') as fd:
-
-            text_content=[]
-
-            for line in fd.readlines():
-                row = []
-                splited = line.strip().split(' ')
-                flag=True
-            # YOLO format validation
-                flag= yoloCheck(splited)
-                if flag==False:
-                    continue
-            #Splitted float numbers of each YOLO line 
-                cla,new_xcenter,new_ycenter,new_width,new_height=lineParse(splited,aug)
-
-                row.append(cla)
-                row.append(new_xcenter)
-                row.append(new_ycenter)
-                row.append(new_width)
-                row.append(new_height)
-
-                text_content.append(row)
-            if text_content!=[]:
-                
-                np.savetxt(savePath+os.path.basename(labelPath)[:-4]+'_'+aug+'.txt',text_content,delimiter=' ',fmt='%d %f %f %f %f')
-            else:
-                # YOLO format error message
-                print(labelPath+ ' does not contain valid YOLO format!')
-    
-# All image augment function
-    def allImageAugmentFactory(self,imagePath,savePath, aug):
-        img=cv2.imread(imagePath)
-
-        if (aug==self.listAug[0]): #rotateC90
-            newImg=cv2.rotate(img,cv2.ROTATE_90_CLOCKWISE)
-        elif (aug==self.listAug[1]):#rotateC180
-            newImg=cv2.rotate(img,cv2.ROTATE_180)
-        elif (aug==self.listAug[2]):#rotateC270
-            newImg=cv2.rotate(img,cv2.ROTATE_90_COUNTERCLOCKWISE)
-        elif (aug==self.listAug[3]):#flipOnY
-            newImg=cv2.flip(img, 1)
-        else:
-            print('No valid augmentation')
-            pass
-        
-        img_ext=self.getOnlyExtension(imagePath)
-        img_name=self.getOnlyBasename(imagePath)
-        cv2.imwrite(savePath+img_name+'_'+aug+img_ext,newImg)
-        
-
-# Warning message box generator   
+    # Warning message box generator   
     def warningMessage(self,message):
         button = QMessageBox.warning(self,'Warning',message)
         if button==QMessageBox.StandardButton.Ok:
             pass
+    
+    def reportProgress(self, n):
+        self.goButton.setText(f"Please Wait! Total File created: {n}")
 
 
 
-app= QApplication(sys.argv)
+if __name__ == '__main__':
 
-window= MyApp()
-window.show()
+    app= QApplication(sys.argv)
+    window= MyApp()
+    window.show()
 
-app.exec()
+    try:
+        sys.exit(app.exec())
+    except SystemExit:
+        print('Closing Window...')
