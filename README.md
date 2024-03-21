@@ -57,6 +57,10 @@ Follow the steps above and run the labelaug.py file
 LabelAug can only work with valid Yolo label format in the .txt file which is : class, x_center, y_center, width , height
 The class should be an integer value and rest of the four in normalized(0-1) float value.
 
+# Demo
+![python_dvl2XoXF7A](https://github.com/Munimul/LabelAug/assets/77501611/e2c56382-2edb-4365-8065-31ada857a170)
+
+
 ### Picture sample
 
 #### Sample user interface displaying all directory information and contained images and labels information
